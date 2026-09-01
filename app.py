@@ -3,6 +3,7 @@ import sqlite3
 import os
 from io import BytesIO
 from xhtml2pdf import pisa
+import requests
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your_fallback_secret_key_here')
@@ -139,6 +140,7 @@ def login():
         if user:
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['email'] = user['email']
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid username/email or password')
@@ -211,26 +213,33 @@ def public_report_card(student_id):
 
 @app.route('/dashboard')
 def dashboard():
-    if 'user_id' not in session:
+    if 'user_id' not in session and 'email' not in session:
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
+    
+    user_id = session.get('user_id')
+    if not user_id:
+        user_row = conn.execute('SELECT * FROM users WHERE email = ?', (session.get('email'),)).fetchone()
+        if user_row:
+            user_id = user_row['id']
+            session['user_id'] = user_id
+    
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    school_name = user['school_name'] if user and 'school_name' in user.keys() else "School Dashboard"
     
     sub = conn.execute(
-        'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', 
-        (session['user_id'], current_term_label)
+        'SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', 
+        (user_id,)
     ).fetchone()
     
-    if not sub:
-        conn.close()
-        return redirect(url_for('renew_subscription'))
-        
-    students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (session['user_id'],)).fetchall()
+    is_paid = 1 if sub else 0
+    
+    students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (user_id,)).fetchall()
     conn.close()
     
     students = [dict(row) for row in students_rows]
-    return render_template('dashboard.html', students=students)
+    return render_template('dashboard.html', students=students, school_name=school_name, is_paid=is_paid)
 
 @app.route('/renew_subscription')
 def renew_subscription():
@@ -276,6 +285,11 @@ def student_list():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    if not sub:
+        conn.close()
+        return redirect(url_for('dashboard'))
+
     students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
     
@@ -293,6 +307,10 @@ def school_settings():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    if not sub:
+        conn.close()
+        return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
         school_name = request.form.get('school_name', '')
@@ -346,6 +364,12 @@ def add_student():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
+    conn = get_db_connection()
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    if not sub:
+        conn.close()
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         name = request.form['name']
         student_class = request.form['class']
@@ -354,7 +378,6 @@ def add_student():
         department = request.form.get('department', '')
         dob = request.form.get('dob', '')
         
-        conn = get_db_connection()
         conn.execute('''
             INSERT INTO students (user_id, name, class, roll_number, sex, department, dob)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -364,6 +387,7 @@ def add_student():
         
         return redirect(url_for('dashboard'))
         
+    conn.close()
     try:
         return render_template('add_student.html')
     except:
@@ -376,6 +400,11 @@ def marks_entry(student_id):
         return redirect(url_for('login'))
         
     conn = get_db_connection()
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    if not sub:
+        conn.close()
+        return redirect(url_for('dashboard'))
+
     student_row = conn.execute('SELECT * FROM students WHERE id = ?', (student_id,)).fetchone()
     student = dict(student_row) if student_row else {}
 
@@ -578,8 +607,6 @@ def get_report_card_context(student_id):
 def logout():
     session.clear()
     return redirect(url_for('login'))
-import requests
-from flask import request, redirect, url_for, jsonify
 
 @app.route('/pay', methods=['POST'])
 def pay():
@@ -617,18 +644,37 @@ def verify_payment():
     res_data = response.json()
     
     if res_data.get('status') and res_data['data']['status'] == 'success':
-        # Get the email of the person who paid from Paystack's response
         email = res_data['data']['customer']['email']
         
-        # Connect to your SQLite database and update their payment/unlock status
         conn = get_db_connection()
-        # (Replace 'users' with your actual table name if it's named 'students' or 'reports')
-        conn.execute("UPDATE users SET is_paid = 1 WHERE email = ?", (email,))
-        conn.commit()
-        conn.close()
+        user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
         
-        return "Payment successful! Your report card is now unlocked."
+        if user:
+            user_id = user['id']
+            current_term_label = get_active_term_for_user(user_id)
+            
+            # Check if subscription entry exists for this term
+            existing = conn.execute(
+                'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ?', 
+                (user_id, current_term_label)
+            ).fetchone()
+            
+            if existing:
+                conn.execute(
+                    'UPDATE school_subscriptions SET status = "active" WHERE user_id = ? AND term = ?',
+                    (user_id, current_term_label)
+                )
+            else:
+                conn.execute(
+                    'INSERT INTO school_subscriptions (user_id, term, status) VALUES (?, ?, "active")',
+                    (user_id, current_term_label)
+                )
+            conn.commit()
+        
+        conn.close()
+        return redirect(url_for('dashboard'))
     
     return "Payment verification failed."
+
 if __name__ == '__main__':
     app.run(debug=True)
