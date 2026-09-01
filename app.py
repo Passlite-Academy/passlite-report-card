@@ -611,7 +611,14 @@ def logout():
 @app.route('/pay', methods=['POST'])
 def pay():
     email = request.form.get('email')
-    amount = int(request.form.get('amount')) * 100  # Amount in kobo
+    if not email:
+        email = "admin@passlite.com" # Fallback email if session email is missing
+        
+    raw_amount = request.form.get('amount')
+    if not raw_amount:
+        return "Amount is required", 400
+        
+    amount = int(raw_amount) * 100  # Convert to kobo
     
     url = "https://api.paystack.co/transaction/initialize"
     headers = {
@@ -630,7 +637,10 @@ def pay():
     if res_data.get('status'):
         auth_url = res_data['data']['authorization_url']
         return redirect(auth_url)
-    return "Payment initialization failed", 400
+        
+    # Print the exact error from Paystack in your terminal logs if it fails again
+    print("Paystack Error Response:", res_data)
+    return f"Payment initialization failed: {res_data.get('message', 'Unknown error')}", 400
 
 @app.route('/verify')
 def verify_payment():
