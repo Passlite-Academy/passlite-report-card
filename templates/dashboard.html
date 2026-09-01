@@ -49,6 +49,7 @@
             font-size: 24px;
             font-weight: bold;
             margin: 15px 0;
+            color: #2c3e50;
         }
         .status-active {
             color: #27ae60;
@@ -69,6 +70,9 @@
             text-decoration: none;
             margin-top: 10px;
             margin-right: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
         }
         .button:hover {
             background: #0b2948;
@@ -97,13 +101,12 @@
 
     <div class="container">
 
-       
         <div class="welcome">
             <h2>Welcome to Your Dashboard, {{ school_name }} 👋</h2>
             <p>Manage your school settings, student records, and digital report card products from this dashboard.</p>
         </div>
 
-        <!-- Quick Navigation Panel for Activated Users -->
+        <!-- Quick Navigation Panel for Management Workspace -->
         <div class="nav-actions">
             <h2>School Management Workspace</h2>
             <p>Use the buttons below to register students, record test/exam scores, and view completed report cards.</p>
@@ -116,34 +119,32 @@
 
         <div class="products">
 
-            <!-- Junior Secondary Card -->
+            <!-- Junior Secondary Report Card Card -->
             <div class="card">
                 <h2>Junior Secondary Report Card</h2>
                 <p>Professional digital report card for Junior Secondary Schools.</p>
                 <div class="price">₦20,000</div>
+                <div class="status-locked">🔒 Not Activated</div>
                 
-                {% if session.get('paid_junior') %}
-                    <div class="status-active">🔓 Activated (Test Mode)</div>
-                    <a href="/students" class="button button-success">Manage Junior Records</a>
-                {% else %}
-                    <div class="status-locked">🔒 Not Activated</div>
-                    <a href="/purchase/junior" class="button">Purchase / Activate</a>
-                {% endif %}
+                <form action="/pay" method="POST">
+                    <input type="hidden" name="email" value="{{ session.get('email') }}">
+                    <input type="hidden" name="amount" value="20000">
+                    <button type="submit" class="button">Purchase / Activate</button>
+                </form>
             </div>
 
-            <!-- Senior Secondary Card -->
+            <!-- Senior Secondary Report Card Card -->
             <div class="card">
                 <h2>Senior Secondary Report Card</h2>
                 <p>Professional digital report card for Senior Secondary Schools.</p>
                 <div class="price">₦25,000</div>
+                <div class="status-locked">🔒 Not Activated</div>
                 
-                {% if session.get('paid_senior') %}
-                    <div class="status-active">🔓 Activated (Test Mode)</div>
-                    <a href="/students" class="button button-success">Manage Senior Records</a>
-                {% else %}
-                    <div class="status-locked">🔒 Not Activated</div>
-                    <a href="/purchase/senior" class="button">Purchase / Activate</a>
-                {% endif %}
+                <form action="/pay" method="POST">
+                    <input type="hidden" name="email" value="{{ session.get('email') }}">
+                    <input type="hidden" name="amount" value="25000">
+                    <button type="submit" class="button">Purchase / Activate</button>
+                </form>
             </div>
 
         </div>
