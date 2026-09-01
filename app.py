@@ -617,10 +617,18 @@ def verify_payment():
     res_data = response.json()
     
     if res_data.get('status') and res_data['data']['status'] == 'success':
-        # Payment successful! Unlock report card logic here
+        # Get the email of the person who paid from Paystack's response
+        email = res_data['data']['customer']['email']
+        
+        # Connect to your SQLite database and update their payment/unlock status
+        conn = get_db_connection()
+        # (Replace 'users' with your actual table name if it's named 'students' or 'reports')
+        conn.execute("UPDATE users SET is_paid = 1 WHERE email = ?", (email,))
+        conn.commit()
+        conn.close()
+        
         return "Payment successful! Your report card is now unlocked."
     
     return "Payment verification failed."
-
 if __name__ == '__main__':
     app.run(debug=True)
