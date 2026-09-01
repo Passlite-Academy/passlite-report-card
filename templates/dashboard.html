@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passlite Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5f9;
+            margin: 0;
+        }
+        .header {
+            background: #123c69;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .welcome {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+        .products {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            flex: 1;
+            min-width: 250px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            color: #123c69;
+            margin-top: 0;
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .status-active {
+            color: #27ae60;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .status-locked {
+            color: #c0392b;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .button {
+            display: inline-block;
+            background: #123c69;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 7px;
+            text-decoration: none;
+            margin-top: 10px;
+            margin-right: 5px;
+        }
+        .button:hover {
+            background: #0b2948;
+        }
+        .button-success {
+            background: #27ae60;
+        }
+        .button-success:hover {
+            background: #219653;
+        }
+        .nav-actions {
+            margin-top: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>PASSLITE INSIGHTS ACADEMY</h1>
+        <p>Digital Report Card System</p>
+    </div>
+
+    <div class="container">
+
+       
+        <div class="welcome">
+            <h2>Welcome to Your Dashboard, {{ school_name }} 👋</h2>
+            <p>Manage your school settings, student records, and digital report card products from this dashboard.</p>
+        </div>
+
+        <!-- Quick Navigation Panel for Activated Users -->
+        <div class="nav-actions">
+            <h2>School Management Workspace</h2>
+            <p>Use the buttons below to register students, record test/exam scores, and view completed report cards.</p>
+            <a href="/student_entry" class="button">➕ Add New Student</a>
+            <a href="/students" class="button">📋 View Student List & Report Cards</a>
+            <a href="/school-settings" class="button">🏫 School Settings</a>
+        </div>
+
+        <h2 style="margin-top: 30px;">Available Report Cards</h2>
+
+        <div class="products">
+
+            <!-- Junior Secondary Card -->
+            <div class="card">
+                <h2>Junior Secondary Report Card</h2>
+                <p>Professional digital report card for Junior Secondary Schools.</p>
+                <div class="price">₦20,000</div>
+                
+                {% if session.get('paid_junior') %}
+                    <div class="status-active">🔓 Activated (Test Mode)</div>
+                    <a href="/students" class="button button-success">Manage Junior Records</a>
+                {% else %}
+                    <div class="status-locked">🔒 Not Activated</div>
+                    <a href="/purchase/junior" class="button">Purchase / Activate</a>
+                {% endif %}
+            </div>
+
+            <!-- Senior Secondary Card -->
+            <div class="card">
+                <h2>Senior Secondary Report Card</h2>
+                <p>Professional digital report card for Senior Secondary Schools.</p>
+                <div class="price">₦25,000</div>
+                
+                {% if session.get('paid_senior') %}
+                    <div class="status-active">🔓 Activated (Test Mode)</div>
+                    <a href="/students" class="button button-success">Manage Senior Records</a>
+                {% else %}
+                    <div class="status-locked">🔒 Not Activated</div>
+                    <a href="/purchase/senior" class="button">Purchase / Activate</a>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

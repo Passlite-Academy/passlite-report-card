@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marks & Data Entry - {{ student['name'] }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #1e3a8a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-top: 25px;
+        }
+        .section-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #334155;
+        }
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        textarea {
+            resize: vertical;
+            height: 60px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+        th {
+            background: #1e3a8a;
+            color: white;
+        }
+        td.subject-title {
+            text-align: left;
+            font-weight: 500;
+        }
+        .btn-submit {
+            background: #16a34a;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .btn-submit:hover {
+            background: #15803d;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #1e3a8a;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+        <h2>Student Data & Marks Entry: {{ student['name'] }} (Class: {{ student['class'] }})</h2>
+
+        <form action="/students/{{ student['id'] }}/marks" method="POST">
+
+            <!-- ATTENDANCE & COMMENTS -->
+            <div class="section-card">
+                <h3>Attendance & General Comments</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Attendance Present:</label>
+                        <input type="number" name="attendance_present" value="{{ student['attendance_present'] or 98 }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Attendance Absent:</label>
+                        <input type="number" name="attendance_absent" value="{{ student['attendance_absent'] or 4 }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Total School Days:</label>
+                        <input type="number" name="total_school_days" value="{{ student['total_school_days'] or 102 }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Class Teacher's Comment:</label>
+                        <textarea name="class_teacher_comment">{{ student['class_teacher_comment'] or 'Has performed well and should strive for higher achievement.' }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Head Teacher's Comment:</label>
+                        <textarea name="head_teacher_comment">{{ student['head_teacher_comment'] or 'Made satisfactory progress. Greater commitment will lead to higher achievement.' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBJECT MARKS TABLE -->
+            <div class="section-card">
+                <h3>Subject Marks (Test / 40, Exam / 60, Last Term / 100)</h3>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 10px;">Note: Only subjects with entered scores will appear on the report card.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Test (Max 40)</th>
+                            <th>Exam (Max 60)</th>
+                            <th>Last Term Cumm (Optional)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subj in subjects %}
+                        {% set key_slug = subj.lower().replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '').replace('/', '_') %}
+                        {% set existing = marks_dict.get(subj, {}) %}
+                        <tr>
+                            <td class="subject-title"><strong>{{ subj }}</strong></td>
+                            <td><input type="number" step="0.5" name="test_{{ key_slug }}" value="{{ existing.get('test_score', '') }}" placeholder="0-40"></td>
+                            <td><input type="number" step="0.5" name="exam_{{ key_slug }}" value="{{ existing.get('exam_score', '') }}" placeholder="0-60"></td>
+                            <td><input type="number" step="0.5" name="last_{{ key_slug }}" value="{{ existing.get('last_cumm', '') }}" placeholder="0-100"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PSYCHOMOTOR SKILLS & AWARD -->
+            <div class="section-card">
+                <h3>Psychomotor Skills & Award Won (Scale 1 - 3)</h3>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 12px;">Scale Legend: 1 = Very Good | 2 = Good | 3 = Below Average</p>
+                
+                {% set psychomotors = ['Creative', 'Verbal Fluency', 'Games', 'Sports', 'Handling tools', 'Drawing & Painting', 'Music Skills'] %}
+                {% for p in psychomotors %}
+                {% set p_key = p.lower().replace(' ', '_').replace('&', 'and') %}
+                <div class="form-row" style="align-items: center; margin-bottom: 6px;">
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;"><label style="font-weight: normal;">{{ p }}:</label></div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select name="{{ p_key }}">
+                            <option value="1" {% if behavior_dict.get(p, 1) == 1 %}selected{% endif %}>1 - Very Good</option>
+                            <option value="2" {% if behavior_dict.get(p, 1) == 2 %}selected{% endif %}>2 - Good</option>
+                            <option value="3" {% if behavior_dict.get(p, 1) == 3 %}selected{% endif %}>3 - Below Average</option>
+                        </select>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="form-row" style="margin-top: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Award / Prize Won:</label>
+                        <input type="text" name="award_won" value="{{ student['award_won'] or '' }}" placeholder="e.g. Best Student in Mathematics">
+                    </div>
+                </div>
+            </div>
+
+            <!-- EFFECTIVE AREAS -->
+            <div class="section-card">
+                <h3>Effective Areas (Scale 1 - 3)</h3>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 12px;">Scale Legend: 1 = Very Good | 2 = Good | 3 = Below Average</p>
+                
+                {% set effectives = ['Punctuality', 'Neatness', 'Politeness', 'Honesty', 'Relationship with others', 'Leadership', 'Emotional Stability', 'Attitude to school', 'Attentiveness', 'Perseverance'] %}
+                {% for e in effectives %}
+                {% set e_key = e.lower().replace(' ', '_') %}
+                <div class="form-row" style="align-items: center; margin-bottom: 6px;">
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;"><label style="font-weight: normal;">{{ e }}:</label></div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select name="{{ e_key }}">
+                            <option value="1" {% if behavior_dict.get(e, 1) == 1 %}selected{% endif %}>1 - Very Good</option>
+                            <option value="2" {% if behavior_dict.get(e, 1) == 2 %}selected{% endif %}>2 - Good</option>
+                            <option value="3" {% if behavior_dict.get(e, 1) == 3 %}selected{% endif %}>3 - Below Average</option>
+                        </select>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- NEXT TERM BILLS -->
+            <div class="section-card">
+                <h3>Next Term Bills</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Debt:</label><input type="number" step="0.01" name="bill_debt" value="{{ student['bill_debt'] or 0 }}"></div>
+                    <div class="form-group"><label>School Fees:</label><input type="number" step="0.01" name="bill_school_fees" value="{{ student['bill_school_fees'] or 0 }}"></div>
+                    <div class="form-group"><label>Computer:</label><input type="number" step="0.01" name="bill_computer" value="{{ student['bill_computer'] or 0 }}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Lessons:</label><input type="number" step="0.01" name="bill_lessons" value="{{ student['bill_lessons'] or 0 }}"></div>
+                    <div class="form-group"><label>Utility:</label><input type="number" step="0.01" name="bill_utility" value="{{ student['bill_utility'] or 0 }}"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">💾 Save All Data & View Report Card</button>
+
+        </form>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student - Passlite Insights Academy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        h2 {
+            color: #123c69;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        p {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccd1d9;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            background: #fafbfc;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #123c69;
+            background: white;
+        }
+        .btn-submit {
+            background: #123c69;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #0b2948;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #123c69;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Register New Student</h2>
+        <p>Enter the complete student bio-data below. Subjects and marks will be recorded separately.</p>
+        
+        <form action="/add_student" method="POST">
+            
+            <div class="form-group">
+                <label for="name">Student's Full Name (Compulsory)</label>
+                <input type="text" id="name" name="name" placeholder="e.g. Adebayo Tunde Johnson" required>
+            </div>
+
+            <div class="form-group">
+                <label for="student_class">Class (Compulsory)</label>
+                <select id="student_class" name="class" required>
+                    <option value="" disabled selected>-- Select Student Class --</option>
+                    <optgroup label="Junior Secondary">
+                        <option value="JSS 1">JSS 1</option>
+                        <option value="JSS 2">JSS 2</option>
+                        <option value="JSS 3">JSS 3</option>
+                    </optgroup>
+                    <optgroup label="Senior Secondary">
+                        <option value="SS 1">SS 1</option>
+                        <option value="SS 2">SS 2</option>
+                        <option value="SS 3">SS 3</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="roll_number">Roll Number / Student No. (Compulsory)</label>
+                <input type="text" id="roll_number" name="roll_number" placeholder="e.g. SS1001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="sex">Sex / Gender</label>
+                <select id="sex" name="sex">
+                    <option value="" disabled selected>-- Select Sex --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="department">Department (Mainly for Senior Classes)</label>
+                <select id="department" name="department">
+                    <option value="" disabled selected>-- Select Department --</option>
+                    <option value="Science">Science</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Junior General">Junior General (JSS)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dob">Date of Birth (DOB)</label>
+                <input type="date" id="dob" name="dob">
+            </div>
+
+            <button type="submit" class="btn-submit">💾 Save Student Record</button>
+        </form>
+
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+    </div>
+
+</body>
+</html>

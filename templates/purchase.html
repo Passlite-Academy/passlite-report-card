@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase - Passlite</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f2f5f9; margin: 0; }
+        .header { background: #123c69; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 50px auto; padding: 30px; }
+        .card { background: white; padding: 35px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: white; }
+        h2 { color: #123c69; }
+        .price { font-size: 30px; font-weight: bold; margin: 20px 0; }
+        .description { color: #555; line-height: 1.6; }
+        .button { display: inline-block; background: #123c69; color: white; padding: 14px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .back { display: block; margin-top: 20px; color: #123c69; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PASSLITE INSIGHTS ACADEMY</h1>
+        <p>Digital Report Card System</p>
+    </div>
+    <div class="container">
+        <div class="card">
+            <h2>{{ product.name }}</h2>
+            <p class="description">
+                You are about to purchase access to this professional digital report card system.
+            </p>
+            <div class="price">
+                ₦{{ "{:,}".format(product.price) }}
+            </div>
+            <p>Please confirm your selection before proceeding to payment.</p>
+            <a href="/pay/{{ product.name|lower }}" class="button">Proceed to Payment</a>
+            <a href="/dashboard" class="back">← Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
