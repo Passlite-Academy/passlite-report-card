@@ -610,10 +610,24 @@ def logout():
 
 @app.route('/pay', methods=['POST'])
 def pay():
-    email = request.form.get('email')
-    if not email:
-        email = "admin@passlite.com" # Fallback email if session email is missing
+    email = None
+    
+    # 1. Try to get email from form submission if sent
+    if request.form.get('email'):
+        email = request.form.get('email').strip()
         
+    # 2. If not in form, try to fetch it from the logged-in user's database record
+    if not email and 'user_id' in session:
+        conn = get_db_connection()
+        user = conn.execute('SELECT email FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        conn.close()
+        if user and user['email']:
+            email = user['email'].strip()
+            
+    # 3. Final safe fallback email if both above are empty
+    if not email or '@' not in email:
+        email = "admin@passlite.com"
+
     raw_amount = request.form.get('amount')
     if not raw_amount:
         return "Amount is required", 400
@@ -638,11 +652,8 @@ def pay():
         auth_url = res_data['data']['authorization_url']
         return redirect(auth_url)
         
-    # Print the exact error from Paystack in your terminal logs if it fails again
     print("Paystack Error Response:", res_data)
-    return f"Payment initialization failed: {res_data.get('message', 'Unknown error')}", 400
-
-@app.route('/verify')
+    return f"Payment initialization failed: {res_data.get('message', 'Unknown error')}", 400@app.route('/verify')
 def verify_payment():
     reference = request.args.get('reference')
     url = f"https://api.paystack.co/transaction/verify/{reference}"
