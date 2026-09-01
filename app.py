@@ -4,9 +4,10 @@ import os
 from io import BytesIO
 from xhtml2pdf import pisa
 
-app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+import os
 
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your_fallback_secret_key_here')
 # Default active term fallback for school subscriptions
 DEFAULT_CURRENT_TERM = "First Term 2026/2027"
 
