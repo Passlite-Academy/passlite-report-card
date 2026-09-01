@@ -578,6 +578,49 @@ def get_report_card_context(student_id):
 def logout():
     session.clear()
     return redirect(url_for('login'))
+import requests
+from flask import request, redirect, url_for, jsonify
+
+@app.route('/pay', methods=['POST'])
+def pay():
+    email = request.form.get('email')
+    amount = int(request.form.get('amount')) * 100  # Amount in kobo
+    
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "email": email,
+        "amount": amount,
+        "callback_url": url_for('verify_payment', _external=True)
+    }
+    
+    response = requests.post(url, json=data, headers=headers)
+    res_data = response.json()
+    
+    if res_data.get('status'):
+        auth_url = res_data['data']['authorization_url']
+        return redirect(auth_url)
+    return "Payment initialization failed", 400
+
+@app.route('/verify')
+def verify_payment():
+    reference = request.args.get('reference')
+    url = f"https://api.paystack.co/transaction/verify/{reference}"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"
+    }
+    
+    response = requests.get(url, headers=headers)
+    res_data = response.json()
+    
+    if res_data.get('status') and res_data['data']['status'] == 'success':
+        # Payment successful! Unlock report card logic here
+        return "Payment successful! Your report card is now unlocked."
+    
+    return "Payment verification failed."
 
 if __name__ == '__main__':
     app.run(debug=True)
