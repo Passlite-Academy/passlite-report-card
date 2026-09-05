@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Term Activation - Passlite Portal</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5f9;
+            margin: 0;
+        }
+
+        .header {
+            background: #123c69;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 550px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #123c69;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .badge-inactive {
+            background: #fde8e8;
+            color: #c53030;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-top: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+        }
+
+        .amount {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            color: #2b6cb0;
+        }
+
+        .button {
+            display: block;
+            text-align: center;
+            background: #28a745;
+            color: white;
+            padding: 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 25px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #218838;
+        }
+
+        .back {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #123c69;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>PASSLITE INSIGHTS ACADEMY</h1>
+    <p>Digital Report Card System</p>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <h2>Term Activation Required</h2>
+        <span class="badge-inactive">LICENSE INACTIVE FOR THIS TERM</span>
+
+        <div class="row">
+            <strong>School Name</strong>
+            <span>{{ user.school_name or 'My School' }}</span>
+        </div>
+
+        <div class="row">
+            <strong>Academic Session</strong>
+            <span>{{ user.academic_session or '2026/2027' }}</span>
+        </div>
+
+        <div class="row">
+            <strong>Target Term</strong>
+            <span>{{ user.current_term or 'First Term' }}</span>
+        </div>
+
+        <!-- Form wrapping the Paystack POST request to send the selected category -->
+        <form action="{{ url_for('pay') }}" method="POST">
+            
+            <div class="form-group">
+                <label for="coverage_type">Select Coverage & Duration</label>
+                <select name="coverage_type" id="coverage_type" onchange="updatePrice()">
+                    <option value="Junior">Junior School Only - 1 Term (₦15,000)</option>
+                    <option value="Senior">Senior School Only - 1 Term (₦20,000)</option>
+                    <option value="Both">Junior & Senior Combo - 1 Term (₦30,000)</option>
+                    <option value="Session_Both">Full Session - All 3 Terms Combo (₦80,000)</option>
+                </select>
+            </div>
+
+            <div class="amount" id="display_amount">
+                ₦15,000
+            </div>
+
+            <button type="submit" class="button">
+                Proceed with Paystack Payment
+            </button>
+        </form>
+
+        <a href="/select_term" class="back">
+            ↺ Switch Term / Session
+        </a>
+
+    </div>
+
+</div>
+
+<script>
+    function updatePrice() {
+        const selectBox = document.getElementById('coverage_type');
+        const displayAmount = document.getElementById('display_amount');
+        const selectedValue = selectBox.value;
+
+        if (selectedValue === 'Senior') {
+            displayAmount.innerText = '₦20,000';
+        } else if (selectedValue === 'Both') {
+            displayAmount.innerText = '₦30,000';
+        } else if (selectedValue === 'Session_Both') {
+            displayAmount.innerText = '₦80,000';
+        } else {
+            displayAmount.innerText = '₦15,000';
+        }
+    }
+</script>
+
+</body>
+
+</html>

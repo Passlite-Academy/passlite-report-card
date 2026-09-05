@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Academic Session & Term - Passlite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h2 {
+            color: #123c69;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        p {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            background: #123c69;
+            color: white;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .button:hover {
+            background: #0d2c4d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h2>Active Term Setup</h2>
+        <p>Select your current academic session and term before accessing your dashboard.</p>
+
+        <form action="{{ url_for('select_term') }}" method="POST">
+            
+            <div class="form-group">
+                <label for="academic_session">Academic Session</label>
+                <select name="academic_session" id="academic_session">
+                    <option value="2026/2027" {% if user.academic_session == '2026/2027' %}selected{% endif %}>2026/2027 Academic Session</option>
+                    <option value="2027/2028" {% if user.academic_session == '2027/2028' %}selected{% endif %}>2027/2028 Academic Session</option>
+                    <option value="2028/2029" {% if user.academic_session == '2028/2029' %}selected{% endif %}>2028/2029 Academic Session</option>
+                    <option value="2029/2030" {% if user.academic_session == '2029/2030' %}selected{% endif %}>2029/2030 Academic Session</option>
+                    <option value="2030/2031" {% if user.academic_session == '2030/2031' %}selected{% endif %}>2030/2031 Academic Session</option>
+                    <option value="2031/2032" {% if user.academic_session == '2031/2032' %}selected{% endif %}>2031/2032 Academic Session</option>
+                    <option value="2032/2033" {% if user.academic_session == '2032/2033' %}selected{% endif %}>2032/2033 Academic Session</option>
+                    <option value="2033/2034" {% if user.academic_session == '2033/2034' %}selected{% endif %}>2033/2034 Academic Session</option>
+                    <option value="2034/2035" {% if user.academic_session == '2034/2035' %}selected{% endif %}>2034/2035 Academic Session</option>
+                    <option value="2035/2036" {% if user.academic_session == '2035/2036' %}selected{% endif %}>2035/2036 Academic Session</option>
+                    <option value="2036/2037" {% if user.academic_session == '2036/2037' %}selected{% endif %}>2036/2037 Academic Session</option>
+                    <option value="2037/2038" {% if user.academic_session == '2037/2038' %}selected{% endif %}>2037/2038 Academic Session</option>
+                    <option value="2038/2039" {% if user.academic_session == '2038/2039' %}selected{% endif %}>2038/2039 Academic Session</option>
+                    <option value="2039/2040" {% if user.academic_session == '2039/2040' %}selected{% endif %}>2039/2040 Academic Session</option>
+                    <option value="2040/2041" {% if user.academic_session == '2040/2041' %}selected{% endif %}>2040/2041 Academic Session</option>
+                    <option value="2041/2042" {% if user.academic_session == '2041/2042' %}selected{% endif %}>2041/2042 Academic Session</option>
+                    <option value="2042/2043" {% if user.academic_session == '2042/2043' %}selected{% endif %}>2042/2043 Academic Session</option>
+                    <option value="2043/2044" {% if user.academic_session == '2043/2044' %}selected{% endif %}>2043/2044 Academic Session</option>
+                    <option value="2044/2045" {% if user.academic_session == '2044/2045' %}selected{% endif %}>2044/2045 Academic Session</option>
+                    <option value="2045/2046" {% if user.academic_session == '2045/2046' %}selected{% endif %}>2045/2046 Academic Session</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="current_term">Target Term</label>
+                <select name="current_term" id="current_term">
+                    <option value="First Term" {% if user.current_term == 'First Term' %}selected{% endif %}>First Term</option>
+                    <option value="Second Term" {% if user.current_term == 'Second Term' %}selected{% endif %}>Second Term</option>
+                    <option value="Third Term" {% if user.current_term == 'Third Term' %}selected{% endif %}>Third Term</option>
+                </select>
+            </div>
+
+            <button type="submit" class="button">Continue to Dashboard</button>
+        </form>
+    </div>
+
+</body>
+</html>

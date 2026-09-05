@@ -124,7 +124,7 @@ def get_active_term_for_user(user_id):
 @app.route('/')
 def index():
     if 'user_id' in session:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('select_term'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -141,7 +141,7 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['email'] = user['email']
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('select_term'))
         else:
             flash('Invalid username/email or password')
             
@@ -174,27 +174,64 @@ def register():
 
 
 # ==========================================
-# PUBLIC STUDENT RESULT CHECKER (Roll No + Name Match)
+# SELECT TERM & SESSION CONFIGURATION
+# ==========================================
+
+@app.route('/select_term', methods=['GET', 'POST'])
+def select_term():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    user_id = session['user_id']
+    
+    if request.method == 'POST':
+        academic_session = request.form.get('academic_session', '2026/2027')
+        current_term = request.form.get('current_term', 'First Term')
+        
+        conn.execute(
+            'UPDATE users SET academic_session = ?, current_term = ? WHERE id = ?',
+            (academic_session, current_term, user_id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('dashboard'))
+        
+    user_row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    conn.close()
+    
+    user = dict(user_row) if user_row else {}
+    return render_template('select_term.html', user=user)
+
+
+# ==========================================
+# PUBLIC STUDENT RESULT CHECKER (Roll No + Session/Term + Name Match)
 # ==========================================
 
 @app.route('/check-result', methods=['GET', 'POST'])
 def check_result():
-    """Allows parents/students to search results using Roll Number and a Name/Surname keyword."""
+    """Allows parents/students to search results using Roll Number, Session, Term, and Name keyword."""
     if request.method == 'POST':
         roll_number = request.form.get('roll_number', '').strip()
+        academic_session = request.form.get('academic_session', '').strip()
+        current_term = request.form.get('current_term', '').strip()
         name_input = request.form.get('name_input', '').strip().lower()
         
         conn = get_db_connection()
-        student = conn.execute(
-            'SELECT * FROM students WHERE roll_number = ? AND LOWER(name) LIKE ?', 
-            (roll_number, f'%{name_input}%')
-        ).fetchone()
+        student = conn.execute('''
+            SELECT students.* FROM students 
+            JOIN users ON students.user_id = users.id
+            WHERE students.roll_number = ? 
+              AND LOWER(students.name) LIKE ? 
+              AND users.academic_session = ? 
+              AND users.current_term = ?
+        ''', (roll_number, f'%{name_input}%', academic_session, current_term)).fetchone()
         conn.close()
         
         if student:
             return redirect(url_for('public_report_card', student_id=student['id']))
         else:
-            flash('Invalid Roll Number or Student Name. Please check and try again.', 'danger')
+            flash('Invalid details, or no result found for the selected Session and Term. Please check and try again.', 'danger')
             
     return render_template('check_result.html')
 
@@ -228,54 +265,36 @@ def dashboard():
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     school_name = user['school_name'] if user and 'school_name' in user.keys() else "School Dashboard"
     
+    current_term_label = get_active_term_for_user(user_id)
+    
     sub = conn.execute(
-        'SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', 
-        (user_id,)
+        'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', 
+        (user_id, current_term_label)
     ).fetchone()
     
     is_paid = 1 if sub else 0
+    
+    if not is_paid:
+        conn.close()
+        return redirect(url_for('payment_portal'))
     
     students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (user_id,)).fetchall()
     conn.close()
     
     students = [dict(row) for row in students_rows]
-    return render_template('dashboard.html', students=students, school_name=school_name, is_paid=is_paid)
+    return render_template('dashboard.html', students=students, school_name=school_name, is_paid=is_paid, user=user)
 
-@app.route('/renew_subscription')
-def renew_subscription():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('renew_subscription.html')
-
-@app.route('/subscription_callback')
-def subscription_callback():
+@app.route('/payment_portal')
+def payment_portal():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
-    
-    existing = conn.execute(
-        'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ?', 
-        (session['user_id'], current_term_label)
-    ).fetchone()
-    
-    if existing:
-        conn.execute(
-            'UPDATE school_subscriptions SET status = "active" WHERE user_id = ? AND term = ?',
-            (session['user_id'], current_term_label)
-        )
-    else:
-        conn.execute(
-            'INSERT INTO school_subscriptions (user_id, term, status) VALUES (?, ?, "active")',
-            (session['user_id'], current_term_label)
-        )
-        
-    conn.commit()
+    user_row = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
     conn.close()
-    flash('Subscription renewed successfully!', 'success')
-    return redirect(url_for('dashboard'))
-
+    
+    user = dict(user_row) if user_row else {}
+    return render_template('payment_portal.html', user=user)
 
 @app.route('/student_list')
 @app.route('/students')
@@ -285,10 +304,11 @@ def student_list():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    current_term_label = get_active_term_for_user(session['user_id'])
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
     if not sub:
         conn.close()
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('payment_portal'))
 
     students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
@@ -307,10 +327,11 @@ def school_settings():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    current_term_label = get_active_term_for_user(session['user_id'])
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
     if not sub:
         conn.close()
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('payment_portal'))
     
     if request.method == 'POST':
         school_name = request.form.get('school_name', '')
@@ -365,10 +386,11 @@ def add_student():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    current_term_label = get_active_term_for_user(session['user_id'])
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
     if not sub:
         conn.close()
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('payment_portal'))
 
     if request.method == 'POST':
         name = request.form['name']
@@ -400,10 +422,11 @@ def marks_entry(student_id):
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND status = "active"', (session['user_id'],)).fetchone()
+    current_term_label = get_active_term_for_user(session['user_id'])
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
     if not sub:
         conn.close()
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('payment_portal'))
 
     student_row = conn.execute('SELECT * FROM students WHERE id = ?', (student_id,)).fetchone()
     student = dict(student_row) if student_row else {}
@@ -611,15 +634,30 @@ def logout():
 @app.route('/pay', methods=['POST'])
 def pay():
     try:
-        # Force your verified email address to completely bypass any missing data/session issues
-        email = "yunusasaheed5@gmail.com"
-        
-        # Safely pull the amount from the form, with a default fallback of 2000 if missing
-        raw_amount = request.form.get('amount')
-        if not raw_amount:
-            raw_amount = "2000"  # Default amount fallback for school activation
+        user_id = session.get('user_id')
+        if not user_id:
+            return redirect(url_for('login'))
             
-        amount = int(raw_amount) * 100  # Convert to kobo
+        conn = get_db_connection()
+        user_row = conn.execute('SELECT email FROM users WHERE id = ?', (user_id,)).fetchone()
+        conn.close()
+        
+        email = user_row['email'] if user_row and user_row['email'] else "yunusasaheed5@gmail.com"
+        
+        # Capture selected coverage type from payment portal dropdown
+        coverage_type = request.form.get('coverage_type', 'Junior')
+        
+        # Promotional Pricing Logic
+        if coverage_type == 'Senior':
+            amount_naira = 20000
+        elif coverage_type == 'Both':
+            amount_naira = 30000
+        elif coverage_type == 'Session_Both':
+            amount_naira = 80000
+        else:
+            amount_naira = 15000  # Junior Default
+            
+        amount_kobo = amount_naira * 100  # Convert to kobo for Paystack
         
         url = "https://api.paystack.co/transaction/initialize"
         headers = {
@@ -628,7 +666,7 @@ def pay():
         }
         data = {
             "email": email,
-            "amount": amount,
+            "amount": amount_kobo,
             "callback_url": url_for('verify_payment', _external=True)
         }
         
@@ -669,7 +707,6 @@ def verify_payment():
             user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
             
             if not user:
-                # Fallback to current session user if email lookup fails
                 user_id = session.get('user_id')
             else:
                 user_id = user['id']
@@ -677,7 +714,6 @@ def verify_payment():
             if user_id:
                 current_term_label = get_active_term_for_user(user_id)
                 
-                # Check if subscription entry exists for this term
                 existing = conn.execute(
                     'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ?', 
                     (user_id, current_term_label)

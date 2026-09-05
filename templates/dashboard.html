@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Passlite Dashboard</title>
+    <title>Passlite Dashboard - Passlite Insights Academy</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,6 +27,32 @@
             border-radius: 12px;
             margin-bottom: 25px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .welcome-text h2 {
+            color: #123c69;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .welcome-text p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+        .badge-box {
+            background: #eef2f7;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #333;
+            border-left: 4px solid #123c69;
+        }
+        .badge-box strong {
+            color: #123c69;
         }
         .products {
             display: flex;
@@ -38,12 +64,13 @@
             padding: 25px;
             border-radius: 12px;
             flex: 1;
-            min-width: 250px;
+            min-width: 280px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         }
         .card h2 {
             color: #123c69;
             margin-top: 0;
+            font-size: 20px;
         }
         .price {
             font-size: 24px;
@@ -52,14 +79,24 @@
             color: #2c3e50;
         }
         .status-active {
-            color: #27ae60;
+            background: #e6f4ea;
+            color: #137333;
+            padding: 8px 12px;
+            border-radius: 6px;
             font-weight: bold;
             margin-bottom: 15px;
+            display: inline-block;
+            font-size: 14px;
         }
         .status-locked {
-            color: #c0392b;
+            background: #fde8e8;
+            color: #c53030;
+            padding: 8px 12px;
+            border-radius: 6px;
             font-weight: bold;
             margin-bottom: 15px;
+            display: inline-block;
+            font-size: 14px;
         }
         .button {
             display: inline-block;
@@ -73,22 +110,39 @@
             border: none;
             cursor: pointer;
             font-size: 14px;
+            font-weight: bold;
+            text-align: center;
         }
         .button:hover {
             background: #0b2948;
         }
         .button-success {
-            background: #27ae60;
+            background: #28a745;
         }
         .button-success:hover {
-            background: #219653;
+            background: #218838;
         }
         .nav-actions {
             margin-top: 25px;
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 12px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+        .nav-actions h2 {
+            color: #123c69;
+            margin-top: 0;
+        }
+        .logout-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #c53030;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .logout-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -101,52 +155,54 @@
 
     <div class="container">
 
+        <!-- Welcome Banner with Active Term Info -->
         <div class="welcome">
-            <h2>Welcome to Your Dashboard, {{ school_name }} 👋</h2>
-            <p>Manage your school settings, student records, and digital report card products from this dashboard.</p>
+            <div class="welcome-text">
+                <h2>Welcome Back, {{ school_name }} 👋</h2>
+                <p>Manage your student records, scores, and digital report cards smoothly.</p>
+            </div>
+            <div class="badge-box">
+                <div>Session: <strong>{{ user.academic_session or '2026/2027' }}</strong></div>
+                <div style="margin-top: 4px;">Term: <strong>{{ user.current_term or 'First Term' }}</strong></div>
+                <div style="margin-top: 6px;"><a href="/select_term" style="font-size: 12px; color: #123c69; text-decoration: underline;">Change Term / Session</a></div>
+            </div>
+        </div>
+
+        <!-- Subscription Status & Activation Card -->
+        <div class="products">
+            <div class="card" style="flex: 100%;">
+                <h2>Term License & Activation Status</h2>
+                <p>To register students, enter scores, and generate or print digital report cards for this term, your license must be active.</p>
+                
+                {% if is_paid %}
+                    <div class="status-active">🟢 ACTIVE: License Unlocked for {{ user.current_term }} ({{ user.academic_session }})</div>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 5px;">Your workspace is fully unlocked. You can proceed to manage your students.</p>
+                {% else %}
+                    <div class="status-locked">🔒 INACTIVE: License Locked for {{ user.current_term }} ({{ user.academic_session }})</div>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Take advantage of our promotional introductory rates (Junior ₦15k, Senior ₦20k, Combo ₦30k, or Full Session ₦80k).</p>
+                    <a href="/payment_portal" class="button button-success">Proceed to Payment / Activation Portal 🚀</a>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Quick Navigation Panel for Management Workspace -->
         <div class="nav-actions">
             <h2>School Management Workspace</h2>
-            <p>Use the buttons below to register students, record test/exam scores, and view completed report cards.</p>
-            <a href="/student_entry" class="button">➕ Add New Student</a>
-            <a href="/students" class="button">📋 View Student List & Report Cards</a>
-            <a href="/school-settings" class="button">🏫 School Settings</a>
-        </div>
-
-        <h2 style="margin-top: 30px;">Available Report Cards</h2>
-
-        <div class="products">
-
-            <!-- Junior Secondary Report Card Card -->
-            <div class="card">
-                <h2>Junior Secondary Report Card</h2>
-                <p>Professional digital report card for Junior Secondary Schools.</p>
-                <div class="price">₦20,000</div>
-                <div class="status-locked">🔒 Not Activated</div>
-                
-                <form action="/pay" method="POST">
-                    <input type="hidden" name="email" value="{{ session.get('email') }}">
-                    <input type="hidden" name="amount" value="20000">
-                    <button type="submit" class="button">Purchase / Activate</button>
-                </form>
+            <p>Use the buttons below to register students, record test/exam scores, view completed report cards, or update your school badge and details.</p>
+            
+            {% if is_paid %}
+                <a href="/student_entry" class="button">➕ Add New Student</a>
+                <a href="/students" class="button">📋 View Student List & Report Cards</a>
+                <a href="/school-settings" class="button">🏫 School Settings</a>
+            {% else %}
+                <button class="button" style="background: #cbd5e0; cursor: not-allowed;" title="Activate license to unlock">➕ Add New Student (Locked)</button>
+                <button class="button" style="background: #cbd5e0; cursor: not-allowed;" title="Activate license to unlock">📋 View Student List (Locked)</button>
+                <a href="/school-settings" class="button">🏫 School Settings</a>
+            {% endif %}
+            
+            <div style="margin-top: 20px;">
+                <a href="/logout" class="logout-link">🚪 Log Out of Account</a>
             </div>
-
-            <!-- Senior Secondary Report Card Card -->
-            <div class="card">
-                <h2>Senior Secondary Report Card</h2>
-                <p>Professional digital report card for Senior Secondary Schools.</p>
-                <div class="price">₦25,000</div>
-                <div class="status-locked">🔒 Not Activated</div>
-                
-                <form action="/pay" method="POST">
-                    <input type="hidden" name="email" value="{{ session.get('email') }}">
-                    <input type="hidden" name="amount" value="25000">
-                    <button type="submit" class="button">Purchase / Activate</button>
-                </form>
-            </div>
-
         </div>
 
     </div>
