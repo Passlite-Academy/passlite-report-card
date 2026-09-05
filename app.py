@@ -37,13 +37,16 @@ def init_db():
         )
     """)
 
-    # School subscriptions table for termly admin licensing
+    # School subscriptions table for termly and session tracking
     conn.execute("""
         CREATE TABLE IF NOT EXISTS school_subscriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
+            academic_session TEXT,
             term TEXT NOT NULL,
             status TEXT NOT NULL,
+            reference TEXT,
+            amount REAL,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
@@ -57,6 +60,12 @@ def init_db():
             conn.execute(f"ALTER TABLE users ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
             pass
+
+    # Ensure academic_session column exists in school_subscriptions for legacy databases
+    try:
+        conn.execute("ALTER TABLE school_subscriptions ADD COLUMN academic_session TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS students (
@@ -266,10 +275,12 @@ def dashboard():
     school_name = user['school_name'] if user and 'school_name' in user.keys() else "School Dashboard"
     
     current_term_label = get_active_term_for_user(user_id)
+    term_only = user['current_term'] if user and user['current_term'] else 'First Term'
+    session_only = user['academic_session'] if user and user['academic_session'] else '2026/2027'
     
     sub = conn.execute(
-        'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', 
-        (user_id, current_term_label)
+        'SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL) AND status = "active"', 
+        (user_id, current_term_label, term_only, session_only)
     ).fetchone()
     
     is_paid = 1 if sub else 0
@@ -304,13 +315,18 @@ def student_list():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
+    user_id = session['user_id']
+    user = conn.execute('SELECT current_term, academic_session FROM users WHERE id = ?', (user_id,)).fetchone()
+    current_term_label = get_active_term_for_user(user_id)
+    term_only = user['current_term'] if user and user['current_term'] else 'First Term'
+    session_only = user['academic_session'] if user and user['academic_session'] else '2026/2027'
+    
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL) AND status = "active"', (user_id, current_term_label, term_only, session_only)).fetchone()
     if not sub:
         conn.close()
         return redirect(url_for('payment_portal'))
 
-    students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (session['user_id'],)).fetchall()
+    students_rows = conn.execute('SELECT * FROM students WHERE user_id = ?', (user_id,)).fetchall()
     conn.close()
     
     students = [dict(row) for row in students_rows]
@@ -327,8 +343,13 @@ def school_settings():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
+    user_id = session['user_id']
+    user_check = conn.execute('SELECT current_term, academic_session FROM users WHERE id = ?', (user_id,)).fetchone()
+    current_term_label = get_active_term_for_user(user_id)
+    term_only = user_check['current_term'] if user_check and user_check['current_term'] else 'First Term'
+    session_only = user_check['academic_session'] if user_check and user_check['academic_session'] else '2026/2027'
+    
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL) AND status = "active"', (user_id, current_term_label, term_only, session_only)).fetchone()
     if not sub:
         conn.close()
         return redirect(url_for('payment_portal'))
@@ -386,8 +407,13 @@ def add_student():
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
+    user_id = session['user_id']
+    user_check = conn.execute('SELECT current_term, academic_session FROM users WHERE id = ?', (user_id,)).fetchone()
+    current_term_label = get_active_term_for_user(user_id)
+    term_only = user_check['current_term'] if user_check and user_check['current_term'] else 'First Term'
+    session_only = user_check['academic_session'] if user_check and user_check['academic_session'] else '2026/2027'
+    
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL) AND status = "active"', (user_id, current_term_label, term_only, session_only)).fetchone()
     if not sub:
         conn.close()
         return redirect(url_for('payment_portal'))
@@ -422,8 +448,13 @@ def marks_entry(student_id):
         return redirect(url_for('login'))
         
     conn = get_db_connection()
-    current_term_label = get_active_term_for_user(session['user_id'])
-    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ? AND status = "active"', (session['user_id'], current_term_label)).fetchone()
+    user_id = session['user_id']
+    user_check = conn.execute('SELECT current_term, academic_session FROM users WHERE id = ?', (user_id,)).fetchone()
+    current_term_label = get_active_term_for_user(user_id)
+    term_only = user_check['current_term'] if user_check and user_check['current_term'] else 'First Term'
+    session_only = user_check['academic_session'] if user_check and user_check['academic_session'] else '2026/2027'
+    
+    sub = conn.execute('SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL) AND status = "active"', (user_id, current_term_label, term_only, session_only)).fetchone()
     if not sub:
         conn.close()
         return redirect(url_for('payment_portal'))
@@ -647,15 +678,15 @@ def pay():
         # Capture selected coverage type from payment portal dropdown
         coverage_type = request.form.get('coverage_type', 'Junior')
         
-        # Promotional Pricing Logic
+        # Pricing Logic aligned with your choices
         if coverage_type == 'Senior':
-            amount_naira = 20000
+            amount_naira = 25000
         elif coverage_type == 'Both':
-            amount_naira = 30000
+            amount_naira = 40000
         elif coverage_type == 'Session_Both':
-            amount_naira = 80000
+            amount_naira = 100000
         else:
-            amount_naira = 15000  # Junior Default
+            amount_naira = 20000  # Junior Default Multi-user
             
         amount_kobo = amount_naira * 100  # Convert to kobo for Paystack
         
@@ -664,10 +695,15 @@ def pay():
             "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
         }
+        
+        # Store coverage_type in metadata to recognize Full Session upon verification
         data = {
             "email": email,
             "amount": amount_kobo,
-            "callback_url": url_for('verify_payment', _external=True)
+            "callback_url": url_for('verify_payment', _external=True),
+            "metadata": {
+                "coverage_type": coverage_type
+            }
         }
         
         response = requests.post(url, json=data, headers=headers)
@@ -701,34 +737,64 @@ def verify_payment():
         res_data = response.json()
         
         if res_data.get('status') and res_data['data']['status'] == 'success':
-            email = res_data['data']['customer']['email']
+            tx_data = res_data['data']
+            email = tx_data['customer']['email']
+            metadata = tx_data.get('metadata', {})
+            coverage_type = metadata.get('coverage_type', '')
+            amount_paid = tx_data['amount'] / 100
             
             conn = get_db_connection()
-            user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+            user = conn.execute('SELECT id, academic_session, current_term FROM users WHERE email = ?', (email,)).fetchone()
             
             if not user:
                 user_id = session.get('user_id')
+                user = conn.execute('SELECT id, academic_session, current_term FROM users WHERE id = ?', (user_id,)).fetchone()
             else:
                 user_id = user['id']
                 
-            if user_id:
-                current_term_label = get_active_term_for_user(user_id)
+            if user_id and user:
+                academic_sess = user['academic_session'] or '2026/2027'
                 
-                existing = conn.execute(
-                    'SELECT * FROM school_subscriptions WHERE user_id = ? AND term = ?', 
-                    (user_id, current_term_label)
-                ).fetchone()
-                
-                if existing:
-                    conn.execute(
-                        'UPDATE school_subscriptions SET status = "active" WHERE user_id = ? AND term = ?',
-                        (user_id, current_term_label)
-                    )
+                # If Full Session (Session_Both) was paid, unlock all 3 terms automatically!
+                if coverage_type == 'Session_Both':
+                    all_terms = ['First Term', 'Second Term', 'Third Term']
+                    for t in all_terms:
+                        term_label = f"{t} {academic_sess}"
+                        existing = conn.execute(
+                            'SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL)', 
+                            (user_id, term_label, t, academic_sess)
+                        ).fetchone()
+                        
+                        if existing:
+                            conn.execute(
+                                'UPDATE school_subscriptions SET status = "active", academic_session = ? WHERE id = ?',
+                                (academic_sess, existing['id'])
+                            )
+                        else:
+                            conn.execute(
+                                'INSERT INTO school_subscriptions (user_id, academic_session, term, status, reference, amount) VALUES (?, ?, ?, "active", ?, ?)',
+                                (user_id, academic_sess, term_label, reference, amount_paid / 3)
+                            )
                 else:
-                    conn.execute(
-                        'INSERT INTO school_subscriptions (user_id, term, status) VALUES (?, ?, "active")',
-                        (user_id, current_term_label)
-                    )
+                    # Single term unlock
+                    current_term_label = get_active_term_for_user(user_id)
+                    term_only = user['current_term'] or 'First Term'
+                    
+                    existing = conn.execute(
+                        'SELECT * FROM school_subscriptions WHERE user_id = ? AND (term = ? OR term = ?) AND (academic_session = ? OR academic_session IS NULL)', 
+                        (user_id, current_term_label, term_only, academic_sess)
+                    ).fetchone()
+                    
+                    if existing:
+                        conn.execute(
+                            'UPDATE school_subscriptions SET status = "active", academic_session = ? WHERE id = ?',
+                            (academic_sess, existing['id'])
+                        )
+                    else:
+                        conn.execute(
+                            'INSERT INTO school_subscriptions (user_id, academic_session, term, status, reference, amount) VALUES (?, ?, ?, "active", ?, ?)',
+                            (user_id, academic_sess, current_term_label, reference, amount_paid)
+                        )
                 conn.commit()
             
             conn.close()
